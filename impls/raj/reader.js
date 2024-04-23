@@ -1,4 +1,5 @@
-const { MalList, MalSymbol, MalNil, MalVector } = require("./types");
+const { MalList, MalSymbol, MalNil, MalVector, MalMap } = require("./types");
+const { pr_str } = require("./printer");
 
 class Reader {
   #tokens;
@@ -40,9 +41,24 @@ const read_sequence = (reader, closing_token, type) => {
   return new type(list);
 };
 
+const read_hashmap = reader => {
+  const map = new Map();
+  reader.next();
+
+  while (reader.peek() !== "}") {
+    if (reader.peek() === undefined) throw new Error("unbalanced");
+    const key = read_form(reader);
+    const value = read_form(reader);
+    map.set(key, value);
+  }
+  reader.next();
+
+  return new MalMap(map);
+};
+
 const read_atom = reader => {
   const token = reader.next();
-  const numRegex = /^\d+$/;
+  const numRegex = /^-?\d+$/;
   if (numRegex.test(token)) return parseInt(token);
 
   switch (token) {
@@ -64,6 +80,8 @@ const read_form = reader => {
       return read_sequence(reader, ")", MalList);
     case "[":
       return read_sequence(reader, "]", MalVector);
+    case "{":
+      return read_hashmap(reader);
     default:
       return read_atom(reader);
   }
