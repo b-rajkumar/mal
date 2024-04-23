@@ -56,8 +56,19 @@ class MalMap extends MalType {
   }
 
   pr_str() {
-    return "{" + [...this.value.entries()].flat().map(pr_str).join(" ") + "}";
+    return "{" + this.value.flat().map(pr_str).join(" ") + "}";
   }
 }
 
-module.exports = { MalList, MalSymbol, MalNil, MalVector, MalMap };
+class MalQuote extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return "(quote " + pr_str(this.value) + ")";
+  }
+}
+
+module.exports = { MalList, MalSymbol, MalNil, MalVector, MalMap, MalQuote };

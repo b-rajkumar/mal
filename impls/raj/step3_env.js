@@ -3,14 +3,26 @@ const { stdin: input, stdout: output } = require("node:process");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
 const { MalList, MalSymbol, MalVector, MalMap } = require("./types");
+const Env = require("./env");
 
 const rl = readline.createInterface({ input, output });
 const READ = str => read_str(str);
+const createEnv = (bindings, outerEnv) => {
+  const env = new Env(outerEnv);
+
+  for (let i = 0; i < bindings.length; i += 2) {
+    const key = bindings[i].value;
+    const value = EVAL(bindings[i + 1], env);
+    env.set(key, value);
+  }
+
+  return env;
+};
 
 const eval_ast = (ast, env) => {
   if (ast instanceof MalSymbol) {
     const symbol = ast.value;
-    const f = env[symbol];
+    const f = env.get(symbol);
     if (f === undefined) return ast;
     return f;
   }
@@ -40,21 +52,28 @@ const eval_ast = (ast, env) => {
 const EVAL = (ast, env) => {
   if (!(ast instanceof MalList)) return eval_ast(ast, env);
   if (ast.isEmpty()) return ast;
+  const [f, a, b] = ast.value;
 
-  const [f, ...params] = eval_ast(ast, env).value;
-
-  return f.apply(null, params);
+  switch (f.value) {
+    case "def!":
+      return env.set(a.value, EVAL(b, env));
+    case "let*":
+      const newEnv = createEnv(a.value, env);
+      return EVAL(b, newEnv);
+    default:
+      const [fun, ...params] = eval_ast(ast, env).value;
+      return fun.apply(null, params);
+  }
 };
 
 const PRINT = ast => pr_str(ast);
 const rep = expStr => PRINT(EVAL(READ(expStr), repl_env));
 
-const repl_env = {
-  "+": (a, b) => a + b,
-  "-": (a, b) => a - b,
-  "*": (a, b) => a * b,
-  "/": (a, b) => a / b,
-};
+const repl_env = new Env();
+repl_env.set("+", (a, b) => a + b);
+repl_env.set("-", (a, b) => a - b);
+repl_env.set("*", (a, b) => a * b);
+repl_env.set("/", (a, b) => a / b);
 
 const repl = () =>
   rl.question("user> ", input => {
