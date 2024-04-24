@@ -5,6 +5,7 @@ const {
   MalVector,
   MalMap,
   MalQuote,
+  MalBool,
 } = require("./types");
 
 class Reader {
@@ -70,9 +71,9 @@ const read_atom = reader => {
 
   switch (token) {
     case "true":
-      return true;
+      return new MalBool(true);
     case "false":
-      return false;
+      return new MalBool(false);
     case "nil":
       return new MalNil();
     default:

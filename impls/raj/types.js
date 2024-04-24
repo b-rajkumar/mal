@@ -71,4 +71,35 @@ class MalQuote extends MalType {
   }
 }
 
-module.exports = { MalList, MalSymbol, MalNil, MalVector, MalMap, MalQuote };
+class MalFunction extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return "#<function>";
+  }
+}
+
+class MalBool extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return this.value.toString();
+  }
+}
+
+module.exports = {
+  MalList,
+  MalSymbol,
+  MalNil,
+  MalVector,
+  MalMap,
+  MalQuote,
+  MalFunction,
+  MalBool,
+};
