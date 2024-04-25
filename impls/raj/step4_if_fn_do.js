@@ -2,6 +2,7 @@ const readline = require("node:readline");
 const { stdin: input, stdout: output } = require("node:process");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
+const { ns } = require("./core");
 const {
   MalList,
   MalSymbol,
@@ -9,7 +10,8 @@ const {
   MalMap,
   MalFunction,
   MalNil,
-  MalBool,
+  MalQuote,
+  MalString,
 } = require("./types");
 const Env = require("./env");
 
@@ -35,6 +37,10 @@ const eval_ast = (ast, env) => {
     return f;
   }
 
+  if (ast instanceof MalQuote) {
+    return ast.value;
+  }
+
   if (ast instanceof MalList) {
     return new MalList(ast.value.map(e => EVAL(e, env)));
   }
@@ -57,16 +63,24 @@ const eval_ast = (ast, env) => {
   return ast;
 };
 
-const handleFunction = (fun, params, outerEnv) => {
-  const [first, body] = fun.value;
+const handleFunction = (fun, params) => {
+  const [outerEnv, first, ...body] = fun.value;
   const bindings = first.value;
   const env = new Env(outerEnv);
+  let i = 0;
 
-  for (let i = 0; i < bindings.length; i++) {
-    env.set(bindings[i].value, EVAL(params[i], outerEnv));
+  while (i < bindings.length) {
+    if (bindings[i].value === "&") {
+      env.set(bindings[i + 1].value, new MalList(params.slice(i)), env);
+      break;
+    }
+
+    env.set(bindings[i].value, EVAL(params[i], env));
+    i++;
   }
 
-  return EVAL(body, env);
+  const doAst = new MalList([new MalString("do"), ...body]);
+  return EVAL(doAst, env);
 };
 
 const handleDo = (ast, env) => {
@@ -81,52 +95,80 @@ const handleDo = (ast, env) => {
 
 const handleIf = (ast, env) => {
   const [_, condition, trueBranch, falseBranch] = ast.value;
-  if (EVAL(condition, env).value) return EVAL(trueBranch, env);
+  const pred = EVAL(condition, env).value;
+  const falsyValues = [null, false];
+  if (falsyValues.some(a => pred === a)) {
+    if (falseBranch === undefined) return new MalNil();
+    return EVAL(falseBranch, env);
+  }
 
-  return EVAL(falseBranch, env);
+  return EVAL(trueBranch, env);
+};
+
+const handleLet = (ast, env) => {
+  const [_, bindings, ...body] = ast.value;
+  const newEnv = createEnv(bindings.value, env);
+  const doAst = new MalList([new MalString("do"), ...body]);
+  return EVAL(doAst, newEnv);
+};
+
+const handleDef = (ast, env) => {
+  const [_, name, body] = ast.value;
+  return env.set(name.value, EVAL(body, env));
+};
+
+const createFunc = (ast, env) => {
+  const [_, params, ...more] = ast.value;
+  return new MalFunction([env, params, ...more]);
 };
 
 const EVAL = (ast, env) => {
   if (!(ast instanceof MalList)) return eval_ast(ast, env);
   if (ast.isEmpty()) return ast;
-  const [f, a, b] = ast.value;
+  const [f] = ast.value;
 
   switch (f.value) {
     case "def!":
-      return env.set(a.value, EVAL(b, env));
+      return handleDef(ast, env);
     case "let*":
-      const newEnv = createEnv(a.value, env);
-      return EVAL(b, newEnv);
+      return handleLet(ast, env);
     case "fn*":
-      return new MalFunction([a, b]);
+      return createFunc(ast, env);
     case "do":
       return handleDo(ast, env);
     case "if":
       return handleIf(ast, env);
     default:
       const [fun, ...params] = eval_ast(ast, env).value;
-      if (fun instanceof MalFunction) return handleFunction(fun, params, env);
+      if (fun instanceof MalFunction) return handleFunction(fun, params);
       return fun.apply(null, params);
   }
 };
 
-const PRINT = ast => pr_str(ast);
-const rep = expStr => PRINT(EVAL(READ(expStr), repl_env));
+const PRINT = ast => pr_str(ast, true);
+const rep = (expStr, env) => PRINT(EVAL(READ(expStr), env));
+const setupEnv = (env, ns) => {
+  Object.entries(ns).forEach(([key, value]) => {
+    env.set(key, value);
+  });
 
-const repl_env = new Env();
-repl_env.set("+", (a, b) => a + b);
-repl_env.set("-", (a, b) => a - b);
-repl_env.set("*", (a, b) => a * b);
-repl_env.set("/", (a, b) => a / b);
+  return env;
+};
 
-const repl = () =>
+const repl = env =>
   rl.question("user> ", input => {
     try {
-      console.log(rep(input, repl_env));
+      console.log(rep(input, env));
     } catch (e) {
       console.log(e);
     }
-    repl();
+    repl(env);
   });
 
-repl();
+const main = () => {
+  const repl_env = new Env();
+  const env = setupEnv(repl_env, ns);
+  repl(env);
+};
+
+main();

@@ -442,7 +442,7 @@ nil
 ;=>7
 
 ;; Testing vector printing
-(pr-str [1 2 "abc" "\""] "def")
+``(pr-str [1 2 "abc" "\""] "def")``
 ;=>"[1 2 \"abc\" \"\\\"\"] \"def\""
 
 (pr-str [])

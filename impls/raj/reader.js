@@ -6,6 +6,9 @@ const {
   MalMap,
   MalQuote,
   MalBool,
+  MalValue,
+  MalString,
+  MalKeyword,
 } = require("./types");
 
 class Reader {
@@ -67,7 +70,19 @@ const read_hashmap = reader => {
 const read_atom = reader => {
   const token = reader.next();
   const numRegex = /^-?\d+$/;
-  if (numRegex.test(token)) return parseInt(token);
+  if (numRegex.test(token)) return new MalValue(parseInt(token));
+  if (token.startsWith('"')) {
+    if (token.endsWith('"') && token.length > 1) {
+      return new MalString(token.slice(1, -1));
+    }
+    throw new Error("unbalanced");
+  }
+  if (token.startsWith("'")) {
+    if (token.endsWith("'") && token.length > 1)
+      return new MalString(token.slice(1, -1));
+    throw new Error("unbalanced");
+  }
+  if (token.startsWith(":")) return new MalKeyword(token);
 
   switch (token) {
     case "true":

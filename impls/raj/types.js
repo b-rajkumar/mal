@@ -1,6 +1,18 @@
 const MalType = require("./mal_type");
 const { pr_str } = require("./printer");
 
+const isSequence = a => a instanceof MalList || a instanceof MalVector;
+
+const compareArrays = (a, b) => {
+  if (a.length != b.length) return false;
+  return a.every((e, i) => {
+    if (e instanceof MalType) return e.equals(b[i]);
+    if (Array.isArray(e) && Array.isArray(b[i])) return compareArrays(e, b[i]);
+
+    return e === b[i];
+  });
+};
+
 class MalList extends MalType {
   constructor(list) {
     super();
@@ -14,6 +26,11 @@ class MalList extends MalType {
   isEmpty() {
     return this.value.length === 0;
   }
+
+  equals(b) {
+    if (!isSequence(b)) return false;
+    return compareArrays(this.value, b.value);
+  }
 }
 
 class MalVector extends MalType {
@@ -24,6 +41,11 @@ class MalVector extends MalType {
 
   pr_str() {
     return "[" + this.value.map(pr_str).join(" ") + "]";
+  }
+
+  equals(b) {
+    if (!isSequence(b)) return false;
+    return compareArrays(this.value, b.value);
   }
 }
 
@@ -36,6 +58,11 @@ class MalSymbol extends MalType {
   pr_str() {
     return this.value.toString();
   }
+
+  equals(b) {
+    if (!(b instanceof MalSymbol)) return false;
+    return this.value === b.value;
+  }
 }
 
 class MalNil extends MalType {
@@ -46,6 +73,10 @@ class MalNil extends MalType {
 
   pr_str() {
     return "nil";
+  }
+
+  equals(b) {
+    return b instanceof MalNil;
   }
 }
 
@@ -58,6 +89,14 @@ class MalMap extends MalType {
   pr_str() {
     return "{" + this.value.flat().map(pr_str).join(" ") + "}";
   }
+
+  equals(b) {
+    if (!(b instanceof MalMap)) return false;
+    if (this.value.length != b.value.length) return false;
+    return this.value.every((e, i) => {
+      return compareArrays(e, b.value[i]);
+    });
+  }
 }
 
 class MalQuote extends MalType {
@@ -68,6 +107,11 @@ class MalQuote extends MalType {
 
   pr_str() {
     return "(quote " + pr_str(this.value) + ")";
+  }
+
+  equals(b) {
+    if (!(b instanceof MalQuote)) return false;
+    if (this.value instanceof MalType) return this.value.equals(b.value);
   }
 }
 
@@ -91,6 +135,59 @@ class MalBool extends MalType {
   pr_str() {
     return this.value.toString();
   }
+
+  equals(b) {
+    if (!(b instanceof MalBool)) return false;
+    return this.value === b.value;
+  }
+}
+
+class MalString extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return '"' + this.value + '"';
+  }
+
+  equals(b) {
+    if (!(b instanceof MalString)) return false;
+    return this.value === b.value;
+  }
+}
+
+class MalValue extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return this.value.toString();
+  }
+
+  equals(b) {
+    if (!(b instanceof MalValue)) return false;
+    return this.value === b.value;
+  }
+}
+
+class MalKeyword extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return this.value.toString();
+  }
+
+  equals(b) {
+    if (!(b instanceof MalKeyword)) return false;
+    return this.value === b.value;
+  }
 }
 
 module.exports = {
@@ -102,4 +199,7 @@ module.exports = {
   MalQuote,
   MalFunction,
   MalBool,
+  MalString,
+  MalValue,
+  MalKeyword,
 };

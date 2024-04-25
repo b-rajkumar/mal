@@ -2,7 +2,7 @@ const readline = require("node:readline");
 const { stdin: input, stdout: output } = require("node:process");
 const { read_str } = require("./reader");
 const { pr_str } = require("./printer");
-const { MalList, MalSymbol, MalVector, MalMap } = require("./types");
+const { MalList, MalSymbol, MalVector, MalMap, MalValue } = require("./types");
 const Env = require("./env");
 
 const rl = readline.createInterface({ input, output });
@@ -70,10 +70,10 @@ const PRINT = ast => pr_str(ast);
 const rep = expStr => PRINT(EVAL(READ(expStr), repl_env));
 
 const repl_env = new Env();
-repl_env.set("+", (a, b) => a + b);
-repl_env.set("-", (a, b) => a - b);
-repl_env.set("*", (a, b) => a * b);
-repl_env.set("/", (a, b) => a / b);
+repl_env.set("+", (a, b) => new MalValue(a.value + b.value));
+repl_env.set("-", (a, b) => new MalValue(a.value - b.value));
+repl_env.set("*", (a, b) => new MalValue(a.value * b.value));
+repl_env.set("/", (a, b) => new MalValue(a.value / b.value));
 
 const repl = () =>
   rl.question("user> ", input => {
