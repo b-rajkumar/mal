@@ -36,13 +36,10 @@ const eval_ast = (ast, env) => {
   }
 
   if (ast instanceof MalMap) {
-    const evaluatedMap = ast.value.reduce((map, [key, value]) => {
-      const evaluatedKey = EVAL(key, env);
-      const evaluatedValue = EVAL(value, env);
-
-      return [...map, [evaluatedKey, evaluatedValue]];
-    }, []);
-
+    const evaluatedMap = ast.value.map(([k, v]) => [
+      EVAL(k, env),
+      EVAL(v, env),
+    ]);
     return new MalMap(evaluatedMap);
   }
 

@@ -23,6 +23,7 @@ const createEnv = (bindings, outerEnv) => {
   for (let i = 0; i < bindings.length; i += 2) {
     const key = bindings[i].value;
     const value = EVAL(bindings[i + 1], env);
+
     env.set(key, value);
   }
 
@@ -75,17 +76,15 @@ const handleFunction = (fun, params) => {
     env.set(bindings[i].value, EVAL(params[i], env));
     i++;
   }
-
   const doAst = new MalList([new MalString("do"), ...body]);
-  return EVAL(doAst, env);
+
+  return [doAst, env];
 };
 
 const handleDo = (ast, env) => {
   const [_, ...rest] = ast.value;
-  let lastExpResult = new MalNil();
-  rest.forEach(element => {
-    lastExpResult = EVAL(element, env);
-  });
+  let lastExpResult = rest.pop();
+  rest.forEach(element => EVAL(element, env));
 
   return lastExpResult;
 };
@@ -96,17 +95,17 @@ const handleIf = (ast, env) => {
   const falsyValues = [null, false];
   if (falsyValues.some(a => pred === a)) {
     if (falseBranch === undefined) return new MalNil();
-    return EVAL(falseBranch, env);
+    return falseBranch;
   }
 
-  return EVAL(trueBranch, env);
+  return trueBranch;
 };
 
 const handleLet = (ast, env) => {
   const [_, bindings, ...body] = ast.value;
   const newEnv = createEnv(bindings.value, env);
   const doAst = new MalList([new MalString("do"), ...body]);
-  return EVAL(doAst, newEnv);
+  return [doAst, newEnv];
 };
 
 const handleDef = (ast, env) => {
@@ -120,26 +119,37 @@ const createFunc = (ast, env) => {
 };
 
 const EVAL = (ast, env) => {
-  if (!(ast instanceof MalList)) return eval_ast(ast, env);
-  if (ast.isEmpty()) return ast;
-  const [f] = ast.value;
+  let lastAst = ast;
+  let updatedEnv = env;
 
-  switch (f.value) {
-    case "def!":
-      return handleDef(ast, env);
-    case "let*":
-      return handleLet(ast, env);
-    case "fn*":
-      return createFunc(ast, env);
-    case "do":
-      return handleDo(ast, env);
-    case "if":
-      return handleIf(ast, env);
-    default:
-      const [fun, ...params] = eval_ast(ast, env).value;
-      if (fun instanceof MalFunction) return handleFunction(fun, params);
-      return fun.apply(null, params);
+  while (lastAst instanceof MalList) {
+    if (lastAst.isEmpty()) return lastAst;
+    const [f] = lastAst.value;
+    switch (f.value) {
+      case "def!":
+        return handleDef(lastAst, updatedEnv);
+      case "let*":
+        [lastAst, updatedEnv] = handleLet(lastAst, updatedEnv);
+        break;
+      case "fn*":
+        return createFunc(lastAst, updatedEnv);
+      case "do":
+        lastAst = handleDo(lastAst, updatedEnv);
+        break;
+      case "if":
+        lastAst = handleIf(lastAst, updatedEnv);
+        break;
+      default:
+        const [fun, ...params] = eval_ast(lastAst, updatedEnv).value;
+        if (fun instanceof MalFunction) {
+          [lastAst, updatedEnv] = handleFunction(fun, params);
+          break;
+        }
+        return fun.apply(null, params);
+    }
   }
+
+  return eval_ast(lastAst, updatedEnv);
 };
 
 const PRINT = ast => pr_str(ast, true);
