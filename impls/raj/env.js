@@ -24,6 +24,12 @@ class Env {
 
     return env.#data[key];
   }
+
+  setGlobal(key, value) {
+    if (this.#outer instanceof Env) return this.#outer.setGlobal(key, value);
+    this.set(key, value);
+    return value;
+  }
 }
 
 module.exports = Env;
