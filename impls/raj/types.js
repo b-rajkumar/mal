@@ -19,8 +19,8 @@ class MalList extends MalType {
     this.value = list;
   }
 
-  pr_str() {
-    return "(" + this.value.map(pr_str).join(" ") + ")";
+  pr_str(printReadably) {
+    return "(" + this.value.map(e => pr_str(e, printReadably)).join(" ") + ")";
   }
 
   isEmpty() {
@@ -39,8 +39,8 @@ class MalVector extends MalType {
     this.value = list;
   }
 
-  pr_str() {
-    return "[" + this.value.map(pr_str).join(" ") + "]";
+  pr_str(printReadably) {
+    return "[" + this.value.map(e => pr_str(e, printReadably)).join(" ") + "]";
   }
 
   equals(b) {
@@ -86,8 +86,15 @@ class MalMap extends MalType {
     this.value = value;
   }
 
-  pr_str() {
-    return "{" + this.value.flat().map(pr_str).join(" ") + "}";
+  pr_str(printReadably) {
+    return (
+      "{" +
+      this.value
+        .flat()
+        .map(e => pr_str(e, printReadably))
+        .join(" ") +
+      "}"
+    );
   }
 
   equals(b) {
@@ -148,8 +155,19 @@ class MalString extends MalType {
     this.value = value;
   }
 
-  pr_str() {
-    return '"' + this.value + '"';
+  pr_str(printReadably) {
+    if (printReadably) {
+      return (
+        '"' +
+        this.value
+          .replaceAll("\\", "\\\\")
+          .replaceAll('"', '\\"')
+          .replaceAll("\n", "\\n") +
+        '"'
+      );
+    }
+
+    return this.value;
   }
 
   equals(b) {

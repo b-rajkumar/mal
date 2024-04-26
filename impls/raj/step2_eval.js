@@ -46,7 +46,7 @@ const EVAL = (ast, env) => {
   return f.apply(null, params);
 };
 
-const PRINT = ast => pr_str(ast);
+const PRINT = ast => pr_str(ast, true);
 const rep = expStr => PRINT(EVAL(READ(expStr), repl_env));
 
 const repl_env = {

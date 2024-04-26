@@ -10,32 +10,15 @@ const not = val => {
 };
 
 const pr_str_all = (...malTypes) => {
-  return new MalString(malTypes.map(e => pr_str(e, false)).join(" "));
+  return new MalString(malTypes.map(e => pr_str(e, true)).join(" "));
 };
 
 const str = (...malTypes) => {
-  return new MalString(
-    malTypes
-      .map(e => {
-        if (e instanceof MalString) return e.value;
-        return pr_str(e, true);
-      })
-      .join("")
-  );
+  return new MalString(malTypes.map(e => pr_str(e, false)).join(""));
 };
 
 const println = (...malTypes) => {
-  console.log(
-    malTypes
-      .map(e => {
-        if (e instanceof MalString) return e.value;
-        return pr_str(e, true);
-      })
-      .join(" ")
-      .replaceAll('\\"', '"')
-      .replaceAll("\\n", "\n")
-      .replaceAll("\\\\", "\\")
-  );
+  console.log(malTypes.map(e => pr_str(e, false)).join(" "));
 
   return new MalNil();
 };

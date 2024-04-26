@@ -67,20 +67,44 @@ const read_hashmap = reader => {
   return new MalMap(map);
 };
 
+const isString = (token, quote) => {
+  if (token.startsWith(quote)) {
+    if (token.endsWith(quote) && token.length > 1) {
+      return true;
+    }
+    throw new Error("unbalanced");
+  }
+
+  return false;
+};
+
+const interpretString = token => {
+  let interpretedString = "";
+
+  for (let i = 0; i < token.length; i++) {
+    let char = token[i];
+    if (char === "\\") {
+      i += 1;
+      const nextChar = token[i];
+      if (nextChar === '"' && i === token.length - 1)
+        throw new Error("unbalanced");
+      char = nextChar === "n" ? "\n" : nextChar;
+    }
+
+    interpretedString = interpretedString + char;
+  }
+
+  return interpretedString.slice(1, -1);
+};
+
 const read_atom = reader => {
   const token = reader.next();
   const numRegex = /^-?\d+$/;
   if (numRegex.test(token)) return new MalValue(parseInt(token));
-  if (token.startsWith('"')) {
-    if (token.endsWith('"') && token.length > 1) {
-      return new MalString(token.slice(1, -1));
-    }
-    throw new Error("unbalanced");
-  }
-  if (token.startsWith("'")) {
-    if (token.endsWith("'") && token.length > 1)
-      return new MalString(token.slice(1, -1));
-    throw new Error("unbalanced");
+
+  if (isString(token, "'") || isString(token, '"')) {
+    const interpretedString = interpretString(token);
+    return new MalString(interpretedString);
   }
   if (token.startsWith(":")) return new MalKeyword(token);
 

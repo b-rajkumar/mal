@@ -160,7 +160,7 @@ const repl = env =>
     try {
       console.log(rep(input, env));
     } catch (e) {
-      console.log(e);
+      console.log(e.message);
     }
     repl(env);
   });
