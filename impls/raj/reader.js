@@ -141,23 +141,9 @@ const read_form = reader => {
   }
 };
 
-const removeComments = str => {
-  let processedStr = "";
-  let insideQuote = false;
-  for (let i = 0; i < str.length; i++) {
-    const char = str[i];
-    if (char === '"') insideQuote = !insideQuote;
-    if (char === ";" && !insideQuote) break;
-    processedStr += str[i];
-  }
-
-  return processedStr;
-};
-
 const read_str = str => {
-  const processedStr = str.split("\n").map(removeComments).join("\n");
-  const tokens = tokenize(processedStr);
-  const reader = new Reader(tokens);
+  const tokens = tokenize(str);
+  const reader = new Reader(tokens.filter(e => !e.startsWith(";")));
   const ast = read_form(reader);
 
   if (reader.peek()) throw new Error("unbalanced");
