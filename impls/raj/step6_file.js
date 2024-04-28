@@ -13,6 +13,7 @@ const {
   MalNil,
   MalQuote,
   MalString,
+  MalAtom,
 } = require("./types");
 const Env = require("./env");
 
@@ -138,6 +139,20 @@ const handleReadString = (ast, env) => {
   return read_str(str);
 };
 
+const createAtom = ast => {
+  const [_, value] = ast.value;
+
+  return new MalAtom(value);
+};
+
+const swapAtomValue = (ast, env) => {
+  const [_, atomName, f, ...args] = ast.value;
+  const reset = new MalSymbol("reset!");
+  const atom = env.get(atomName.value);
+  const valueAst = new MalList([f, atom.value, ...args]);
+  return new MalList([reset, atom, valueAst]);
+};
+
 const EVAL = (ast, env) => {
   let lastAst = ast;
   let updatedEnv = env;
@@ -166,6 +181,11 @@ const EVAL = (ast, env) => {
         return handleReadString(lastAst, updatedEnv);
       case "slurp":
         return handleSlurp(lastAst, updatedEnv);
+      case "atom":
+        return createAtom(lastAst);
+      case "swap!":
+        lastAst = swapAtomValue(lastAst, env);
+        break;
       default:
         const [fun, ...params] = eval_ast(lastAst, updatedEnv).value;
         if (fun instanceof MalFunction) {

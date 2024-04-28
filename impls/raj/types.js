@@ -208,6 +208,22 @@ class MalKeyword extends MalType {
   }
 }
 
+class MalAtom extends MalType {
+  constructor(value) {
+    super();
+    this.value = value;
+  }
+
+  pr_str() {
+    return "(atom " + this.value.pr_str() + ")";
+  }
+
+  equals(b) {
+    if (!(b instanceof MalAtom)) return false;
+    return this.value.equals(b.value);
+  }
+}
+
 module.exports = {
   MalList,
   MalSymbol,
@@ -220,4 +236,5 @@ module.exports = {
   MalString,
   MalValue,
   MalKeyword,
+  MalAtom,
 };
