@@ -53,7 +53,7 @@ const EVAL = (ast, env) => {
 
   switch (f.value) {
     case "def!":
-      return env.set(a.value, EVAL(b, env));
+      return repl_env.set(a.value, EVAL(b, env));
     case "let*":
       const newEnv = createEnv(a.value, env);
       return EVAL(b, newEnv);

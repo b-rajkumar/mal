@@ -110,7 +110,7 @@ const handleLet = (ast, env) => {
 
 const handleDef = (ast, env) => {
   const [_, name, body] = ast.value;
-  return env.set(name.value, EVAL(body, env));
+  return repl_env.set(name.value, EVAL(body, env));
 };
 
 const createFunc = (ast, env) => {
@@ -172,10 +172,5 @@ const repl = env =>
     repl(env);
   });
 
-const main = () => {
-  const repl_env = new Env();
-  const env = setupEnv(repl_env, ns);
-  repl(env);
-};
-
-main();
+const repl_env = setupEnv(new Env(), ns);
+repl(repl_env);

@@ -112,12 +112,12 @@ const handleLet = (ast, env) => {
 
 const handleDef = (ast, env) => {
   const [_, name, body] = ast.value;
-  return env.setGlobal(name.value, EVAL(body, env));
+  return repl_env.set(name.value, EVAL(body, env));
 };
 
 const handleEval = (ast, env) => {
   const [_, astToEvaluate] = ast.value;
-  return EVAL(astToEvaluate, env);
+  return [EVAL(astToEvaluate, env), repl_env];
 };
 
 const handleSlurp = (ast, env) => {
@@ -160,7 +160,7 @@ const EVAL = (ast, env) => {
         lastAst = handleIf(lastAst, updatedEnv);
         break;
       case "eval":
-        lastAst = handleEval(lastAst, updatedEnv);
+        [lastAst, updatedEnv] = handleEval(lastAst, updatedEnv);
         break;
       case "read-string":
         return handleReadString(lastAst, updatedEnv);
@@ -199,13 +199,8 @@ const repl = env =>
     repl(env);
   });
 
-const main = () => {
-  const repl_env = new Env();
-  const exp =
-    '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))';
-  rep(exp, repl_env);
-  const env = setupEnv(repl_env, ns);
-  repl(env);
-};
-
-main();
+const repl_env = setupEnv(new Env(), ns);
+const exp =
+  '(def! load-file (fn* (f) (eval (read-string (str "(do " (slurp f) "\nnil)")))))';
+rep(exp, repl_env);
+repl(repl_env);
